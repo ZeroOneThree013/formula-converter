@@ -372,11 +372,12 @@ textarea::placeholder {
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   min-height: 48px;
+  max-height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 4px;
+  padding: 8px;
 }
 
 .formula-canvas {
