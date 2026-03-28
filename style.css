@@ -363,6 +363,39 @@ textarea::placeholder {
   color: var(--error);
 }
 
+/* ===== 圖片卡片 ===== */
+.copy-card--image {
+  grid-column: 1 / -1;
+}
+
+.image-preview-wrap {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.formula-canvas {
+  display: none;
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.formula-canvas.visible {
+  display: block;
+}
+
+.image-preview-placeholder {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-style: italic;
+  user-select: none;
+}
+
 /* ===== KaTeX 覆寫 ===== */
 .katex {
   font-size: 1.3em;

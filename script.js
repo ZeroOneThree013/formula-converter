@@ -31,6 +31,9 @@ const previewEls = {
   mathml:     document.getElementById('preview-mathml'),
 };
 
+const canvasEl          = document.getElementById('formula-canvas');
+const imagePlaceholder  = document.getElementById('image-placeholder');
+
 /* ===== 公式格式化 ===== */
 function formatLatex(raw, mode) {
   return mode === 'display' ? `$$${raw}$$` : `$${raw}$`;
@@ -148,12 +151,86 @@ function wrapMathMLForWord(mathml) {
   ].join('');
 }
 
+/* ===== 圖片預覽 ===== */
+const SCALE = 3; // 3x 解析度，貼入 PPT 清晰
+const PAD   = 20;
+
+async function updateImagePreview(latex) {
+  if (!latex.trim()) {
+    canvasEl.classList.remove('visible');
+    imagePlaceholder.style.display = '';
+    return;
+  }
+
+  // 建立隱藏的渲染容器
+  const wrap = document.createElement('div');
+  wrap.style.cssText = [
+    'position:fixed', 'left:-99999px', 'top:0',
+    'background:#ffffff',
+    `padding:${PAD}px`,
+    'display:inline-block',
+    'white-space:nowrap',
+    'font-size:18px',
+  ].join(';');
+  document.body.appendChild(wrap);
+
+  try {
+    katex.render(latex, wrap, {
+      displayMode: currentMode === 'display',
+      throwOnError: true,
+    });
+
+    const offscreen = await html2canvas(wrap, {
+      backgroundColor: '#ffffff',
+      scale: SCALE,
+      logging: false,
+      useCORS: true,
+    });
+
+    // 縮到適合的顯示尺寸，但 canvas 內部仍為高解析
+    const dispW = Math.min(offscreen.width / SCALE, 700);
+    const dispH = offscreen.height / SCALE;
+    canvasEl.width  = offscreen.width;
+    canvasEl.height = offscreen.height;
+    canvasEl.style.width  = `${dispW}px`;
+    canvasEl.style.height = `${dispH}px`;
+
+    const ctx = canvasEl.getContext('2d');
+    ctx.drawImage(offscreen, 0, 0);
+
+    canvasEl.classList.add('visible');
+    imagePlaceholder.style.display = 'none';
+  } catch {
+    canvasEl.classList.remove('visible');
+    imagePlaceholder.style.display = '';
+  } finally {
+    document.body.removeChild(wrap);
+  }
+}
+
+async function copyAsImage() {
+  if (!canvasEl.classList.contains('visible')) return;
+
+  return new Promise((resolve) => {
+    canvasEl.toBlob(async (blob) => {
+      if (!blob) { resolve(false); return; }
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        resolve(true);
+      } catch {
+        resolve(false);
+      }
+    }, 'image/png');
+  });
+}
+
 /* ===== 渲染預覽 ===== */
 function render(latex) {
   if (!latex.trim()) {
     previewBox.innerHTML = '<span class="preview-placeholder">輸入公式後顯示預覽</span>';
     previewBox.classList.remove('has-content', 'has-error');
     updateFormatPreviews('');
+    updateImagePreview('');
     return;
   }
 
@@ -165,11 +242,13 @@ function render(latex) {
     previewBox.classList.add('has-content');
     previewBox.classList.remove('has-error');
     updateFormatPreviews(latex);
+    updateImagePreview(latex);
   } catch (err) {
     previewBox.innerHTML = `<span class="preview-error">語法錯誤：${escapeHtml(err.message)}</span>`;
     previewBox.classList.add('has-error');
     previewBox.classList.remove('has-content');
     updateFormatPreviews('');
+    updateImagePreview('');
   }
 }
 
@@ -262,6 +341,18 @@ async function handleCopy(format) {
       text = mathml;
       html = wrapMathMLForWord(mathml);
       break;
+    }
+    case 'image': {
+      const ok = await copyAsImage();
+      const card = document.getElementById('copy-image');
+      if (ok) {
+        card?.classList.add('copied');
+        setTimeout(() => card?.classList.remove('copied'), 1200);
+        showToast('圖片已複製，可直接貼入 PPT', 'success');
+      } else {
+        showToast('圖片複製失敗', 'error');
+      }
+      return;
     }
   }
 

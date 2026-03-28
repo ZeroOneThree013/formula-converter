@@ -83,6 +83,17 @@
             </div>
             <code class="format-preview format-preview--mathml" id="preview-mathml">—</code>
           </div>
+
+          <div class="copy-card copy-card--image" id="copy-image">
+            <div class="copy-card-header">
+              <span class="format-name">圖片（PNG，適用 PPT）</span>
+              <button class="copy-btn" data-format="image">複製</button>
+            </div>
+            <div class="image-preview-wrap">
+              <canvas id="formula-canvas" class="formula-canvas"></canvas>
+              <span class="image-preview-placeholder" id="image-placeholder">輸入公式後產生預覽</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -100,6 +111,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
