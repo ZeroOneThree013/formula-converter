@@ -153,20 +153,6 @@ function wrapMathMLForWord(mathml) {
 
 /* ===== 圖片預覽 ===== */
 const SCALE = 3; // 3x 解析度，貼入 PPT 清晰
-const PAD   = 20;
-
-// 獨立的隱藏容器，避免 html2canvas 捕捉到頁面其他元素
-const offscreenHost = document.createElement('div');
-offscreenHost.style.cssText = [
-  'position:absolute',
-  'left:-99999px',
-  'top:-99999px',
-  'width:0',
-  'height:0',
-  'overflow:hidden',
-  'pointer-events:none',
-].join(';');
-document.body.appendChild(offscreenHost);
 
 async function updateImagePreview(latex) {
   if (!latex.trim()) {
@@ -175,47 +161,20 @@ async function updateImagePreview(latex) {
     return;
   }
 
-  // 在隱藏容器內建立渲染 wrap，讓 html2canvas 只看到這個元素
-  const wrap = document.createElement('div');
-  wrap.style.cssText = [
-    'position:absolute',
-    'left:0', 'top:0',
-    'background:#ffffff',
-    `padding:${PAD}px`,
-    'display:inline-block',
-    'white-space:nowrap',
-    'font-size:18px',
-    'width:auto',
-    'height:auto',
-    'overflow:visible',
-  ].join(';');
-  offscreenHost.appendChild(wrap);
-
   try {
-    katex.render(latex, wrap, {
-      displayMode: currentMode === 'display',
-      throwOnError: true,
-    });
+    // 等待字型載入完畢（KaTeX web fonts）
+    await document.fonts.ready;
 
-    // 讓瀏覽器完成 layout 再截圖
-    await new Promise(r => requestAnimationFrame(r));
-
-    const offscreen = await html2canvas(wrap, {
-      backgroundColor: '#ffffff',
+    // 直接捕捉頁面上已渲染的 previewBox，字型必然已載入
+    const offscreen = await html2canvas(previewBox, {
+      backgroundColor: '#ffffff', // 白底覆蓋深色主題
       scale: SCALE,
       logging: false,
       useCORS: true,
-      // 明確指定擷取範圍為 wrap 本身，不含周圍頁面
-      x: 0, y: 0,
-      width:  wrap.scrollWidth,
-      height: wrap.scrollHeight,
-      windowWidth:  wrap.scrollWidth,
-      windowHeight: wrap.scrollHeight,
     });
 
-    // 顯示尺寸上限 700px 寬，內部保留 3x 解析度
     const dispW = Math.min(offscreen.width / SCALE, 700);
-    const dispH = (offscreen.height / SCALE) * (dispW / (offscreen.width / SCALE));
+    const dispH = offscreen.height / SCALE;
     canvasEl.width  = offscreen.width;
     canvasEl.height = offscreen.height;
     canvasEl.style.width  = `${dispW}px`;
@@ -224,11 +183,9 @@ async function updateImagePreview(latex) {
     canvasEl.getContext('2d').drawImage(offscreen, 0, 0);
     canvasEl.classList.add('visible');
     imagePlaceholder.style.display = 'none';
-  } catch {
+  } catch (e) {
     canvasEl.classList.remove('visible');
     imagePlaceholder.style.display = '';
-  } finally {
-    offscreenHost.removeChild(wrap);
   }
 }
 

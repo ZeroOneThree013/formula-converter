@@ -365,7 +365,7 @@ textarea::placeholder {
 
 /* ===== 圖片卡片 ===== */
 .copy-card--image {
-  grid-column: 1 / -1;
+  grid-column: 1 / 3; /* 明確橫跨兩欄，對齊 Notion + MathML */
 }
 
 .image-preview-wrap {
