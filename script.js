@@ -161,57 +161,55 @@ async function updateImagePreview(latex) {
     return;
   }
 
+  // 建立獨立白底容器，直接掛在 body 上（不受深色主題 CSS 影響）
+  const captureEl = document.createElement('div');
+  captureEl.style.cssText = [
+    'position:absolute', 'left:-9999px', 'top:0',
+    'background:#ffffff', 'color:#000000',
+    'padding:20px 24px', 'display:inline-block',
+    'font-size:20px', 'line-height:1.5',
+  ].join(';');
+  document.body.appendChild(captureEl);
+
   try {
+    katex.render(latex, captureEl, {
+      displayMode: currentMode === 'display',
+      throwOnError: true,
+    });
+
+    // 把 CSS 變數 --text 暫時設為黑色，讓 .katex { color: var(--text) } 解析為黑色
+    document.documentElement.style.setProperty('--text', '#000000');
+
     await document.fonts.ready;
+    // 等兩個 frame 確保 CSS 變數重新解析完畢
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    // 暫時將 previewBox 背景設白（否則深色主題背景會覆蓋 canvas 底色）
-    const savedBg = previewBox.style.background;
-    previewBox.style.background = '#ffffff';
-
-    const offscreen = await html2canvas(previewBox, {
+    const offscreen = await html2canvas(captureEl, {
       backgroundColor: '#ffffff',
       scale: SCALE,
       logging: false,
       useCORS: true,
     });
 
-    // 立即還原背景
-    previewBox.style.background = savedBg;
+    // 還原 CSS 變數
+    document.documentElement.style.removeProperty('--text');
 
-    // ---- 後處理：將所有非白色像素強制轉為黑色 ----
-    const tmpCanvas = document.createElement('canvas');
-    tmpCanvas.width  = offscreen.width;
-    tmpCanvas.height = offscreen.height;
-    const tmpCtx = tmpCanvas.getContext('2d');
-    tmpCtx.drawImage(offscreen, 0, 0);
-    const imgData = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
-    const px = imgData.data;
-    for (let i = 0; i < px.length; i += 4) {
-      const brightness = (px[i] + px[i + 1] + px[i + 2]) / 3;
-      if (brightness < 245) {
-        // 非白色 → 黑色
-        px[i] = px[i + 1] = px[i + 2] = 0;
-      } else {
-        // 接近白色 → 純白
-        px[i] = px[i + 1] = px[i + 2] = 255;
-      }
-    }
-    tmpCtx.putImageData(imgData, 0, 0);
-
-    // ---- 寫入顯示用 canvas ----
-    const dispW = Math.min(tmpCanvas.width / SCALE, 700);
-    const dispH = tmpCanvas.height / SCALE;
-    canvasEl.width  = tmpCanvas.width;
-    canvasEl.height = tmpCanvas.height;
+    const dispW = Math.min(offscreen.width / SCALE, 700);
+    const dispH = offscreen.height / SCALE;
+    canvasEl.width  = offscreen.width;
+    canvasEl.height = offscreen.height;
     canvasEl.style.width  = `${dispW}px`;
     canvasEl.style.height = `${dispH}px`;
 
-    canvasEl.getContext('2d').drawImage(tmpCanvas, 0, 0);
+    canvasEl.getContext('2d').drawImage(offscreen, 0, 0);
     canvasEl.classList.add('visible');
     imagePlaceholder.style.display = 'none';
   } catch (e) {
+    document.documentElement.style.removeProperty('--text');
     canvasEl.classList.remove('visible');
     imagePlaceholder.style.display = '';
+  } finally {
+    document.body.removeChild(captureEl);
   }
 }
 
@@ -399,31 +397,16 @@ function showToast(message, type = 'success') {
 }
 
 /* ===== MathML 提示框 ===== */
+const mathmlTipModal = document.getElementById('mathml-tip-modal');
+const tipCloseBtn    = document.getElementById('tip-close-btn');
+
+tipCloseBtn.addEventListener('click', () => mathmlTipModal.classList.remove('visible'));
+mathmlTipModal.addEventListener('click', (e) => {
+  if (e.target === mathmlTipModal) mathmlTipModal.classList.remove('visible');
+});
+
 function showMathMLTip() {
-  // 避免重複彈出
-  if (document.getElementById('mathml-tip')) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'mathml-tip';
-  overlay.className = 'tip-overlay';
-  overlay.innerHTML = `
-    <div class="tip-box">
-      <div class="tip-title">貼上至 Word 注意事項</div>
-      <div class="tip-body">
-        請在 Word 中使用<br>
-        <strong>Ctrl + Shift + V</strong>（只保留文字）<br>
-        或右鍵選擇「<strong>只保留文字</strong>」貼上，<br>
-        才能正確顯示為公式。
-      </div>
-      <button class="tip-close" id="tip-close-btn">知道了</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  // 點擊「知道了」或點擊遮罩關閉
-  const close = () => overlay.remove();
-  document.getElementById('tip-close-btn').addEventListener('click', close);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  mathmlTipModal.classList.add('visible');
 }
 
 /* ===== 工具函式 ===== */

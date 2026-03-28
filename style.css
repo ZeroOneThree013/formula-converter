@@ -402,10 +402,14 @@ textarea::placeholder {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  display: flex;
+  display: none; /* 預設隱藏，JS 切換為 flex */
   align-items: center;
   justify-content: center;
   z-index: 10000;
+}
+
+.tip-overlay.visible {
+  display: flex;
   animation: fadeIn 0.15s ease;
 }
 

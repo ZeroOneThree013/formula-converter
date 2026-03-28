@@ -110,6 +110,19 @@
   <!-- Toast 通知 -->
   <div class="toast" id="toast"></div>
 
+  <!-- MathML 貼上提示 Modal -->
+  <div id="mathml-tip-modal" class="tip-overlay">
+    <div class="tip-box">
+      <div class="tip-title">貼上至 Word 注意事項</div>
+      <div class="tip-body">
+        請在 Word 中右鍵選擇<br>
+        「<strong>只保留文字</strong>」貼上，<br>
+        才能正確顯示為公式。
+      </div>
+      <button class="tip-close" id="tip-close-btn">知道了</button>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="script.js"></script>
