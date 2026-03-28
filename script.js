@@ -400,13 +400,13 @@ function showToast(message, type = 'success') {
 const mathmlTipModal = document.getElementById('mathml-tip-modal');
 const tipCloseBtn    = document.getElementById('tip-close-btn');
 
-tipCloseBtn.addEventListener('click', () => mathmlTipModal.classList.remove('visible'));
+tipCloseBtn.addEventListener('click', () => { mathmlTipModal.style.display = 'none'; });
 mathmlTipModal.addEventListener('click', (e) => {
-  if (e.target === mathmlTipModal) mathmlTipModal.classList.remove('visible');
+  if (e.target === mathmlTipModal) mathmlTipModal.style.display = 'none';
 });
 
 function showMathMLTip() {
-  mathmlTipModal.classList.add('visible');
+  mathmlTipModal.style.display = 'flex';
 }
 
 /* ===== 工具函式 ===== */
