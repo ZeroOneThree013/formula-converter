@@ -165,15 +165,19 @@ async function updateImagePreview(latex) {
     // 等待字型載入完畢（KaTeX web fonts）
     await document.fonts.ready;
 
-    // 截圖前將 KaTeX 文字暫時改為黑色（避免深色主題淺字貼白底看不清）
-    previewBox.style.setProperty('color', '#000000', 'important');
+    // 注入臨時樣式，強制所有 KaTeX 元素使用黑色（覆蓋深色主題）
+    const tmpStyle = document.createElement('style');
+    tmpStyle.textContent = '.katex, .katex * { color: #000000 !important; }';
+    document.head.appendChild(tmpStyle);
+
     const offscreen = await html2canvas(previewBox, {
       backgroundColor: '#ffffff',
       scale: SCALE,
       logging: false,
       useCORS: true,
     });
-    previewBox.style.removeProperty('color');
+
+    document.head.removeChild(tmpStyle);
 
     const dispW = Math.min(offscreen.width / SCALE, 700);
     const dispH = offscreen.height / SCALE;
