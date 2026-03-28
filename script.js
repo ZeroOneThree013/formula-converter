@@ -164,12 +164,19 @@ async function updateImagePreview(latex) {
   try {
     await document.fonts.ready;
 
+    // 暫時將 previewBox 背景設白（否則深色主題背景會覆蓋 canvas 底色）
+    const savedBg = previewBox.style.background;
+    previewBox.style.background = '#ffffff';
+
     const offscreen = await html2canvas(previewBox, {
       backgroundColor: '#ffffff',
       scale: SCALE,
       logging: false,
       useCORS: true,
     });
+
+    // 立即還原背景
+    previewBox.style.background = savedBg;
 
     // ---- 後處理：將所有非白色像素強制轉為黑色 ----
     const tmpCanvas = document.createElement('canvas');
@@ -371,13 +378,13 @@ async function handleCopy(format) {
       mathml:       'MathML 已複製',
     };
     showToast(labels[format], 'success');
-
-    // MathML 複製後彈出提示框
-    if (format === 'mathml') {
-      showMathMLTip();
-    }
   } else {
     showToast('複製失敗，請手動複製', 'error');
+  }
+
+  // MathML 複製後一律彈出提示框（不管複製是否成功）
+  if (format === 'mathml') {
+    setTimeout(showMathMLTip, 300); // 稍微延遲，讓 toast 先出現
   }
 }
 
