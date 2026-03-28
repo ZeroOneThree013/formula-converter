@@ -170,6 +170,9 @@ async function updateImagePreview(latex) {
     tmpStyle.textContent = '.katex, .katex * { color: #000000 !important; }';
     document.head.appendChild(tmpStyle);
 
+    // 等待瀏覽器 repaint 套用新樣式後再截圖
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
     const offscreen = await html2canvas(previewBox, {
       backgroundColor: '#ffffff',
       scale: SCALE,
