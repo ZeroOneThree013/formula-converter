@@ -165,13 +165,15 @@ async function updateImagePreview(latex) {
     // 等待字型載入完畢（KaTeX web fonts）
     await document.fonts.ready;
 
-    // 注入臨時樣式，強制所有 KaTeX 元素使用黑色（覆蓋深色主題）
-    const tmpStyle = document.createElement('style');
-    tmpStyle.textContent = '.katex, .katex * { color: #000000 !important; }';
-    document.head.appendChild(tmpStyle);
-
-    // 等待瀏覽器 repaint 套用新樣式後再截圖
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // 直接對每個 DOM 元素設定 inline color（html2canvas 只認 inline style）
+    const allEls = previewBox.querySelectorAll('*');
+    const saved = new Map();
+    saved.set(previewBox, previewBox.style.color);
+    previewBox.style.setProperty('color', '#000000', 'important');
+    allEls.forEach(el => {
+      saved.set(el, el.style.color);
+      el.style.setProperty('color', '#000000', 'important');
+    });
 
     const offscreen = await html2canvas(previewBox, {
       backgroundColor: '#ffffff',
@@ -180,7 +182,11 @@ async function updateImagePreview(latex) {
       useCORS: true,
     });
 
-    document.head.removeChild(tmpStyle);
+    // 還原所有元素顏色
+    saved.forEach((orig, el) => {
+      if (orig) { el.style.color = orig; }
+      else { el.style.removeProperty('color'); }
+    });
 
     const dispW = Math.min(offscreen.width / SCALE, 700);
     const dispH = offscreen.height / SCALE;
