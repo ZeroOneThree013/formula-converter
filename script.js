@@ -73,6 +73,19 @@ function latexToWordMathML(raw, isDisplay) {
   // 移除 class / style 屬性（Word 不需要）
   stripPresentationAttrs(mathEl);
 
+  // 移除 <annotation> / <annotation-xml>（含原始 LaTeX 文字，PPT 會把它當純文字顯示）
+  for (const el of Array.from(mathEl.querySelectorAll('annotation, annotation-xml'))) {
+    el.parentNode?.removeChild(el);
+  }
+
+  // 解開 <semantics>：只保留第一個子元素（Presentation MathML），移除語意包裝
+  for (const sem of Array.from(mathEl.querySelectorAll('semantics'))) {
+    const presentation = sem.firstElementChild;
+    if (presentation) {
+      sem.replaceWith(presentation);
+    }
+  }
+
   // 加上 mml: 前綴（Word 的 OMML 相容格式）
   const output = document.implementation.createDocument(MATHML_NS, 'mml:math', null);
   const outputRoot = output.documentElement;
