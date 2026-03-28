@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>公式轉換器</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>公式轉換器</h1>
+      <p class="subtitle">輸入 LaTeX 公式，一鍵複製為多種格式</p>
+    </header>
+
+    <main>
+      <!-- 輸入區 -->
+      <section class="input-section">
+        <div class="section-header">
+          <label for="latex-input">LaTeX 輸入</label>
+          <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="inline" title="行內公式 $...$">行內</button>
+            <button class="mode-btn" data-mode="display" title="展示公式 $$...$$">展示</button>
+          </div>
+        </div>
+        <textarea
+          id="latex-input"
+          placeholder="在此輸入 LaTeX 公式，例如：\frac{a^2+b^2}{c^2}"
+          spellcheck="false"
+          autocomplete="off"
+        ></textarea>
+        <div class="input-actions">
+          <button class="clear-btn" id="clear-btn" title="清除輸入">清除</button>
+          <span class="char-count" id="char-count">0 字元</span>
+        </div>
+      </section>
+
+      <!-- 預覽區 -->
+      <section class="preview-section">
+        <div class="section-header">
+          <label>預覽</label>
+        </div>
+        <div class="preview-box" id="preview-box">
+          <span class="preview-placeholder">輸入公式後顯示預覽</span>
+        </div>
+      </section>
+
+      <!-- 複製區 -->
+      <section class="copy-section">
+        <div class="section-header">
+          <label>複製格式</label>
+        </div>
+        <div class="copy-grid">
+          <div class="copy-card" id="copy-latex">
+            <div class="copy-card-header">
+              <span class="format-name">LaTeX（含符號）</span>
+              <button class="copy-btn" data-format="latex">複製</button>
+            </div>
+            <code class="format-preview" id="preview-latex">—</code>
+          </div>
+
+          <div class="copy-card" id="copy-nodollar">
+            <div class="copy-card-header">
+              <span class="format-name">LaTeX（無符號）</span>
+              <button class="copy-btn" data-format="no-dollar">複製</button>
+            </div>
+            <code class="format-preview" id="preview-nodollar">—</code>
+          </div>
+
+          <div class="copy-card" id="copy-notion">
+            <div class="copy-card-header">
+              <span class="format-name">Notion 格式</span>
+              <button class="copy-btn" data-format="notion">複製</button>
+            </div>
+            <code class="format-preview" id="preview-notion">—</code>
+          </div>
+
+          <div class="copy-card" id="copy-mathml">
+            <div class="copy-card-header">
+              <span class="format-name">MathML（Word）</span>
+              <button class="copy-btn" data-format="mathml">複製</button>
+            </div>
+            <code class="format-preview format-preview--mathml" id="preview-mathml">—</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- 範例區 -->
+      <section class="examples-section">
+        <div class="section-header">
+          <label>範例公式</label>
+        </div>
+        <div class="examples-grid" id="examples-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast 通知 -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
