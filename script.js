@@ -165,13 +165,15 @@ async function updateImagePreview(latex) {
     // 等待字型載入完畢（KaTeX web fonts）
     await document.fonts.ready;
 
-    // 直接捕捉頁面上已渲染的 previewBox，字型必然已載入
+    // 截圖前將 KaTeX 文字暫時改為黑色（避免深色主題淺字貼白底看不清）
+    previewBox.style.setProperty('color', '#000000', 'important');
     const offscreen = await html2canvas(previewBox, {
-      backgroundColor: '#ffffff', // 白底覆蓋深色主題
+      backgroundColor: '#ffffff',
       scale: SCALE,
       logging: false,
       useCORS: true,
     });
+    previewBox.style.removeProperty('color');
 
     const dispW = Math.min(offscreen.width / SCALE, 700);
     const dispH = offscreen.height / SCALE;
