@@ -162,18 +162,7 @@ async function updateImagePreview(latex) {
   }
 
   try {
-    // 等待字型載入完畢（KaTeX web fonts）
     await document.fonts.ready;
-
-    // 直接對每個 DOM 元素設定 inline color（html2canvas 只認 inline style）
-    const allEls = previewBox.querySelectorAll('*');
-    const saved = new Map();
-    saved.set(previewBox, previewBox.style.color);
-    previewBox.style.setProperty('color', '#000000', 'important');
-    allEls.forEach(el => {
-      saved.set(el, el.style.color);
-      el.style.setProperty('color', '#000000', 'important');
-    });
 
     const offscreen = await html2canvas(previewBox, {
       backgroundColor: '#ffffff',
@@ -182,20 +171,35 @@ async function updateImagePreview(latex) {
       useCORS: true,
     });
 
-    // 還原所有元素顏色
-    saved.forEach((orig, el) => {
-      if (orig) { el.style.color = orig; }
-      else { el.style.removeProperty('color'); }
-    });
+    // ---- 後處理：將所有非白色像素強制轉為黑色 ----
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width  = offscreen.width;
+    tmpCanvas.height = offscreen.height;
+    const tmpCtx = tmpCanvas.getContext('2d');
+    tmpCtx.drawImage(offscreen, 0, 0);
+    const imgData = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+    const px = imgData.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const brightness = (px[i] + px[i + 1] + px[i + 2]) / 3;
+      if (brightness < 245) {
+        // 非白色 → 黑色
+        px[i] = px[i + 1] = px[i + 2] = 0;
+      } else {
+        // 接近白色 → 純白
+        px[i] = px[i + 1] = px[i + 2] = 255;
+      }
+    }
+    tmpCtx.putImageData(imgData, 0, 0);
 
-    const dispW = Math.min(offscreen.width / SCALE, 700);
-    const dispH = offscreen.height / SCALE;
-    canvasEl.width  = offscreen.width;
-    canvasEl.height = offscreen.height;
+    // ---- 寫入顯示用 canvas ----
+    const dispW = Math.min(tmpCanvas.width / SCALE, 700);
+    const dispH = tmpCanvas.height / SCALE;
+    canvasEl.width  = tmpCanvas.width;
+    canvasEl.height = tmpCanvas.height;
     canvasEl.style.width  = `${dispW}px`;
     canvasEl.style.height = `${dispH}px`;
 
-    canvasEl.getContext('2d').drawImage(offscreen, 0, 0);
+    canvasEl.getContext('2d').drawImage(tmpCanvas, 0, 0);
     canvasEl.classList.add('visible');
     imagePlaceholder.style.display = 'none';
   } catch (e) {
@@ -367,6 +371,11 @@ async function handleCopy(format) {
       mathml:       'MathML 已複製',
     };
     showToast(labels[format], 'success');
+
+    // MathML 複製後彈出提示框
+    if (format === 'mathml') {
+      showMathMLTip();
+    }
   } else {
     showToast('複製失敗，請手動複製', 'error');
   }
@@ -380,6 +389,34 @@ function showToast(message, type = 'success') {
   toastTimer = setTimeout(() => {
     toastEl.classList.remove('show');
   }, 2000);
+}
+
+/* ===== MathML 提示框 ===== */
+function showMathMLTip() {
+  // 避免重複彈出
+  if (document.getElementById('mathml-tip')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'mathml-tip';
+  overlay.className = 'tip-overlay';
+  overlay.innerHTML = `
+    <div class="tip-box">
+      <div class="tip-title">貼上至 Word 注意事項</div>
+      <div class="tip-body">
+        請在 Word 中使用<br>
+        <strong>Ctrl + Shift + V</strong>（只保留文字）<br>
+        或右鍵選擇「<strong>只保留文字</strong>」貼上，<br>
+        才能正確顯示為公式。
+      </div>
+      <button class="tip-close" id="tip-close-btn">知道了</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // 點擊「知道了」或點擊遮罩關閉
+  const close = () => overlay.remove();
+  document.getElementById('tip-close-btn').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 }
 
 /* ===== 工具函式 ===== */
